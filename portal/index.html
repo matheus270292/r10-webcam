@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R10 Webcam — Canon R10 via Wi-Fi</title>
+<meta name="description" content="R10 Webcam: use a Canon EOS R10 como webcam via Wi-Fi CCAPI. Preview, fotos, vídeos e modo apresentar.">
+<style>
+:root{color-scheme:dark;--bg:#0c0d10;--card:#15171c;--line:#262a33;--txt:#eef1f6;--mut:#9aa3b2;--acc:#0a6cff;--ok:#16a34a;--warn:#f59e0b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,#1a2340 0%,var(--bg) 55%) fixed,var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:32px 16px 60px}
+.wrap{max-width:880px;margin:auto;text-align:center}
+.badge{display:inline-block;font-size:12px;padding:5px 14px;border-radius:20px;background:#0f3d22;border:1px solid #14532d;margin-bottom:12px}
+.badge.off{background:#431313;border-color:#7f1d1d}
+h1{font-size:clamp(28px,5vw,46px);margin:8px 0}h1 small{color:var(--mut);font-weight:400}
+p.sub{color:var(--mut);font-size:17px;max-width:640px;margin:0 auto 22px}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:26px}
+a.btn{background:var(--acc);color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:12px;border:1px solid var(--acc)}
+a.btn.ghost{background:transparent;color:var(--txt);border-color:#343a47}
+a.btn:hover{filter:brightness(1.12)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;text-align:left;margin-bottom:22px}
+.card{background:linear-gradient(180deg,#181b21,#13151a);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h3{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.8px;color:#cfd6e2}
+.card p{margin:0;color:var(--mut);font-size:14px;line-height:1.55}
+.card b{color:var(--txt)}
+footer{color:var(--mut);font-size:12px;margin-top:20px}
+code{background:#222;padding:2px 8px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="badge" id="api">● verificando API…</div>
+<h1>📷 R10 Webcam <small>Canon R10 via Wi-Fi · sem USB</small></h1>
+<p class="sub">Preview ao vivo, fotos, gravação de vídeo e modo apresentar para Meet/Zoom. Com câmera real (CCAPI) ou modo demo.</p>
+<div class="btns">
+<a class="btn" href="https://r10-webcam.onrender.com" target="_blank" rel="noopener">▶ Abrir o app</a>
+<a class="btn ghost" href="https://r10-webcam.onrender.com/present" target="_blank" rel="noopener">⛶ Modo Apresentar</a>
+<a class="btn ghost" href="https://r10-webcam.onrender.com/api/health" target="_blank" rel="noopener">API health</a>
+<a class="btn ghost" href="https://github.com/matheus270292/r10-webcam" target="_blank" rel="noopener">GitHub</a>
+</div>
+<div class="grid">
+<div class="card"><h3>1 · Abrir</h3><p>Clique em <b>Abrir o app</b>. Na 1ª carga o plano free pode demorar ~1 min (cold start) — aguarde e recarregue.</p></div>
+<div class="card"><h3>2 · Usar sem câmera</h3><p>O <b>modo demo</b> gera imagem animada: teste foto, vídeo MP4 e ajustes sem R10 conectada.</p></div>
+<div class="card"><h3>3 · Com a R10</h3><p>Ative o <b>CCAPI 1x</b>, coloque câmera e PC no <b>mesmo Wi-Fi</b>, digite o <b>IP da câmera</b> no app → Conectar.</p></div>
+<div class="card"><h3>4 · Entrar na reunião</h3><p>Abra o <b>Modo Apresentar</b> e no Meet/Zoom use <b>Apresentar → Compartilhar tela/aba</b>. Webcam virtual OBS só no app local (Mac/Windows).</p></div>
+</div>
+<footer>Portal grátis em Cloudflare Pages · App em <code>r10-webcam.onrender.com</code> · <code>v1.2.0</code></footer>
+</div>
+<script>
+(async()=>{const b=document.getElementById('api');try{const r=await fetch('https://r10-webcam.onrender.com/api/health');const d=await r.json();b.textContent=d.ok?`● API online · v${d.version||'?'}${d.demo?' · demo':''}`:'● API respondeu com erro';b.classList.toggle('off',!d.ok);}catch(e){b.textContent='● API acordando (cold start) — aguarde 1 min e recarregue';b.classList.add('off');}})();
+</script>
+</body>
+</html>
