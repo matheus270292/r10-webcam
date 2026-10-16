@@ -4,7 +4,11 @@ Uso: executado por build-mac.sh ou GitHub Actions. Não rode no Windows.
 """
 import os
 
-BASE = os.path.abspath(SPECDIR)
+# PyInstaller 6+ removeu SPECDIR — usa o dir do próprio .spec
+try:
+    BASE = os.path.abspath(os.path.dirname(__file__))
+except NameError:
+    BASE = os.getcwd()
 
 a = Analysis(
     ["launcher.py"],
