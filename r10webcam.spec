@@ -13,6 +13,8 @@ a = Analysis(
     datas=[
         ("static", "static"),
         ("requirements.txt", "."),
+        ("VERSION", "."),
+        ("README.md", "."),
     ],
     hiddenimports=[
         "uvicorn",

@@ -18,6 +18,13 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 CAP_DIR = os.path.join(BASE, "captures")
 os.makedirs(CAP_DIR, exist_ok=True)
 
+VERSION = "1.0.0"
+try:
+    with open(os.path.join(BASE, "VERSION"), encoding="utf-8") as _f:
+        VERSION = _f.read().strip() or VERSION
+except Exception:
+    pass
+
 pipe = Pipeline()
 cam = CanonWiFi(on_frame=pipe.push_jpg)
 
@@ -52,12 +59,18 @@ def index():
 @app.get("/api/status")
 def status():
     return {
+        "version": VERSION,
         "camera": cam.status.__dict__,
         "virtualcam": virtualcam.status(),
         "pipe": {"mode": pipe.mode, "flip_h": pipe.flip_h, "rotate": pipe.rotate,
                  "brightness": pipe.brightness, "contrast": pipe.contrast,
                  "text": pipe.text_overlay},
     }
+
+
+@app.get("/api/health")
+def health():
+    return {"ok": True, "version": VERSION}
 
 
 @app.post("/api/connect")

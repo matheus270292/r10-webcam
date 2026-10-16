@@ -1,9 +1,11 @@
 name: build-dmg-macos
 
-# Gera R10Webcam.dmg automaticamente em runner macOS ARM64.
-# Como usar: suba o conteúdo da pasta r10-webcam como raiz do repo no GitHub
-# → aba Actions → "build-dmg-macos" → Run workflow → baixe o artefato .dmg.
-# Sem assinatura Apple: na 1ª vez, botão-direito > Abrir no R10Webcam.app.
+# Como compartilhar (Apple Silicon):
+# 1. Suba esta pasta como raiz do repo no GitHub.
+# 2. Crie uma tag: git tag v1.0.0 && git push origin v1.0.0
+#    -> o .dmg vai para a aba Releases automaticamente.
+# 3. Ou: Actions -> build-dmg-macos -> Run workflow -> baixe o artefato.
+# Na 1a vez no Mac: botao-direito > Abrir no R10Webcam.app (sem assinatura Apple).
 
 on:
   workflow_dispatch:
@@ -14,6 +16,8 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,6 +27,9 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
+      - name: Smoke test (sintaxe)
+        run: |
+          python -m py_compile server.py canon_wifi.py pipeline.py virtualcam.py launcher.py
       - name: Build .app
         run: |
           rm -rf build dist
@@ -40,3 +47,15 @@ jobs:
         with:
           name: R10Webcam-macOS-arm64
           path: R10Webcam.dmg
+      - name: Publish Release (só em tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: R10Webcam.dmg
+          body: |
+            ## R10 Webcam — Canon R10 via Wi-Fi (sem USB)
+            Apple Silicon (M1/M2/M3/M4) · macOS 13+
+            1. Baixe o `R10Webcam.dmg` abaixo
+            2. Arraste para Applications, botão-direito > Abrir (1ª vez)
+            3. Permita "rede local" → abra http://127.0.0.1:8000 → digite o IP da R10
+            Requer: OBS 30+ instalado + CCAPI ativado 1x na câmera.
