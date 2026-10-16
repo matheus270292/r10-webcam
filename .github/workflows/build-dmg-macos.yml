@@ -1,0 +1,42 @@
+name: build-dmg-macos
+
+# Gera R10Webcam.dmg automaticamente em runner macOS ARM64.
+# Como usar: suba o conteúdo da pasta r10-webcam como raiz do repo no GitHub
+# → aba Actions → "build-dmg-macos" → Run workflow → baixe o artefato .dmg.
+# Sem assinatura Apple: na 1ª vez, botão-direito > Abrir no R10Webcam.app.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Build .app
+        run: |
+          rm -rf build dist
+          pyinstaller r10webcam.spec
+      - name: Build .dmg
+        run: |
+          STAGE="dmg-stage"
+          rm -rf "$STAGE" && mkdir -p "$STAGE"
+          cp -R "dist/R10Webcam.app" "$STAGE/"
+          ln -s /Applications "$STAGE/Applications"
+          cp README.md "$STAGE/LEIA-ME.txt"
+          hdiutil create -volname "R10Webcam" -srcfolder "$STAGE" -ov -format UDZO R10Webcam.dmg
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: R10Webcam-macOS-arm64
+          path: R10Webcam.dmg

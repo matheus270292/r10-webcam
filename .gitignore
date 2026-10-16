@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.build-venv/
+build/
+dist/
+*.dmg
+*.spec~ 
+captures/*.jpg
+.DS_Store
