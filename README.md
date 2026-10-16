@@ -10,7 +10,7 @@ MVP 100% wireless para Canon EOS R10 inspirado no EOS Webcam Utility PRO.
 ## Distribuição em .dmg (macOS)
 
 **Opção A — automático (recomendado, sem Mac em mãos):**
-1. Suba o conteúdo desta pasta como raiz de um repo no GitHub (junto da pasta `.github/` que está um nível acima).
+1. Crie um repo no GitHub e suba esta pasta (o workflow já está em `.github/workflows/`).
 2. Aba **Actions → build-dmg-macos → Run workflow** → baixe o artefato `R10Webcam-macOS-arm64` (o `.dmg`).
 3. No Mac: abra o `.dmg`, arraste para Applications, botão-direito → Abrir (1ª vez, app sem assinatura Apple).
 
