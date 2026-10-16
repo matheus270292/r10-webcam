@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import threading
 import time
 from datetime import datetime
 
@@ -28,6 +29,32 @@ except Exception:
 
 DEMO_DEFAULT = os.getenv("DEMO", "1") == "1"  # link publico funciona sem camera
 PORT = int(os.getenv("PORT", "8000"))
+CLOUD = bool(os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID") or os.getenv("HF_SPACE_ID"))
+
+# --- gravador proprio (substitui OBS p/ registrar: mp4 local, sem driver) ---
+rec_state = {"recording": False, "file": "", "error": "", "started_at": ""}
+_rec_stop = threading.Event()
+
+
+def _rec_loop(path: str) -> None:
+    import cv2
+    from pipeline import FPS, H, W
+    try:
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        out = cv2.VideoWriter(path, fourcc, FPS, (W, H))
+        if not out.isOpened():
+            rec_state.update(recording=False, error="nao abriu VideoWriter")
+            return
+        while not _rec_stop.is_set():
+            f = pipe.get_frame()
+            if f is None:
+                time.sleep(0.05)
+                continue
+            out.write(f)
+            time.sleep(1 / FPS)
+        out.release()
+    except Exception as e:
+        rec_state.update(recording=False, error=f"{type(e).__name__}: {e}")
 
 pipe = Pipeline(demo=DEMO_DEFAULT)
 cam = CanonWiFi(on_frame=pipe.push_jpg)
@@ -72,8 +99,10 @@ def status():
     return {
         "version": VERSION,
         "demo": pipe.demo,
+        "cloud": CLOUD,
         "camera": cam.status.__dict__,
         "virtualcam": virtualcam.status(),
+        "rec": dict(rec_state),
         "pipe": {"mode": pipe.mode, "flip_h": pipe.flip_h, "rotate": pipe.rotate,
                  "brightness": pipe.brightness, "contrast": pipe.contrast,
                  "text": pipe.text_overlay},
@@ -82,7 +111,7 @@ def status():
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "version": VERSION, "demo": pipe.demo}
+    return {"ok": True, "version": VERSION, "demo": pipe.demo, "cloud": CLOUD}
 
 
 class DemoReq(BaseModel):
@@ -175,16 +204,65 @@ def snapshot():
 
 @app.post("/api/virtualcam/start")
 def vcam_start(backend: str = "obs"):
+    if CLOUD:
+        msg = "Webcam virtual indisponivel na nuvem — use o app local (Mac/Windows + OBS) ou o Modo Apresentar (/present) com Compartilhar tela no Meet/Zoom."
+        virtualcam._state.update(running=False, error=msg)
+        return JSONResponse({"ok": False, "error": msg}, status_code=400)
     virtualcam.start(pipe, backend=backend)
-    time.sleep(1.0)
+    time.sleep(1.5)
     st = virtualcam.status()
-    return {"ok": not st["error"], **st}
+    if st["error"]:
+        hint = st["error"] + " Dica: instale o OBS 30+, abra 1x Start Virtual Camera -> Stop, ou use /present + Compartilhar tela."
+        return JSONResponse({"ok": False, "error": hint, **st}, status_code=400)
+    return {"ok": True, **st}
 
 
 @app.post("/api/virtualcam/stop")
 def vcam_stop():
     virtualcam.stop()
     return {"ok": True}
+
+
+@app.post("/api/rec/start")
+def rec_start():
+    if rec_state["recording"]:
+        return {"ok": True, **rec_state}
+    fn = f"r10_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+    path = os.path.join(CAP_DIR, fn)
+    _rec_stop.clear()
+    rec_state.update(recording=True, file=fn, error="", started_at=datetime.now().isoformat())
+    threading.Thread(target=_rec_loop, args=(path,), daemon=True, name="rec").start()
+    return {"ok": True, **rec_state}
+
+
+@app.post("/api/rec/stop")
+def rec_stop():
+    _rec_stop.set()
+    rec_state["recording"] = False
+    return {"ok": True, **rec_state}
+
+
+@app.get("/api/rec/status")
+def rec_status():
+    return {"ok": True, **rec_state}
+
+
+@app.get("/api/videos")
+def videos():
+    try:
+        files = sorted(
+            (f for f in os.listdir(CAP_DIR) if f.lower().endswith((".mp4", ".avi"))),
+            reverse=True,
+        )[:50]
+    except Exception:
+        files = []
+    return {"ok": True, "files": files}
+
+
+@app.get("/present", response_class=HTMLResponse)
+def present():
+    with open(os.path.join(BASE, "static", "present.html"), encoding="utf-8") as f:
+        return f.read()
 
 
 @app.get("/preview.mjpg")

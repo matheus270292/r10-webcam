@@ -7,4 +7,6 @@ dist/
 *.dmg
 *.spec~ 
 captures/*.jpg
+captures/*.mp4
+captures/*.avi
 .DS_Store

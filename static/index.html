@@ -34,23 +34,29 @@ a{color:#6ab0ff}
 .toggle{display:flex;align-items:center;gap:8px}
 .switch{position:relative;width:44px;height:24px;background:#333;border-radius:20px;border:1px solid var(--line);cursor:pointer}
 .switch.on{background:var(--ok)}.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.15s}.switch.on::after{left:22px}
+#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:50;display:none;max-width:min(92vw,640px);background:#2a1212;border:1px solid #7f1d1d;color:#ffd9d9;padding:12px 16px;border-radius:12px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#toast.show{display:block}#toast.ok{background:#0f3d22;border-color:#14532d;color:#d3f5dd}
+.notice{background:#221a08;border:1px solid #7c5a10;color:#ffe1a8;padding:10px 12px;border-radius:10px;font-size:13px;margin-top:10px}
+.rec-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#555;margin-right:6px}.rec-dot.on{background:var(--err);animation:blink 1s infinite}@keyframes blink{50%{opacity:.3}}
 </style>
 </head>
 <body>
+<div id="toast"></div>
 <div class="wrap">
 <header class="top">
 <div class="brand"><h1>📷 R10 Webcam <small>Wi-Fi CCAPI · sem USB</small></h1><small id="ver">v…</small></div>
-<div class="pills"><span id="st" class="pill">…</span><span id="vc" class="pill">virtualcam</span><span id="dm" class="pill">demo</span></div>
+<div class="pills"><span id="st" class="pill">…</span><span id="vc" class="pill">virtualcam</span><span id="dm" class="pill">demo</span><span id="rec" class="pill">rec</span></div>
 </header>
 
 <div class="grid2">
 <div>
-<div class="card"><h3>Preview ao vivo</h3><img class="prev" id="prev" src="/preview.mjpg" alt="preview"><div class="row" style="margin-top:10px"><button class="primary" onclick="snap()">📸 Capturar foto</button><button onclick="reloadPrev()">↻ Recarregar preview</button><span class="toggle"><span class="switch" id="swDemo" onclick="toggleDemo()"></span><label>Modo demo (sem câmera)</label></span></div></div>
+<div class="card"><h3>Preview ao vivo</h3><img class="prev" id="prev" src="/preview.mjpg" alt="preview"><div class="row" style="margin-top:10px"><button class="primary" onclick="snap()">📸 Capturar foto</button><button id="btnRec" onclick="toggleRec()">⏺ Gravar vídeo</button><button onclick="reloadPrev()">↻ Recarregar preview</button><a href="/present" target="_blank"><button class="ghost">⛶ Modo Apresentar</button></a><span class="toggle"><span class="switch" id="swDemo" onclick="toggleDemo()"></span><label>Modo demo (sem câmera)</label></span></div><div class="notice" id="cloudNote" style="display:none">☁️ Rodando na nuvem: webcam virtual desativada aqui. Para reunião use <b>Modo Apresentar + Compartilhar tela</b>, ou rode em localhost com OBS. Fotos, vídeos e preview funcionam normal.</div></div>
 <div class="card"><h3>Conectar na Canon R10</h3><div class="row"><input id="ip" placeholder="IP da R10 (ex 192.168.1.20)" style="flex:1;min-width:200px"><button class="primary" onclick="connect()">Conectar</button><button class="ghost" onclick="disconnect()">Desconectar</button></div><p style="color:var(--mut);font-size:13px">Na R10: Menu → Funções wireless → CCAPI → mesma rede Wi-Fi. <a href="/static/ativacao-ccapi.html">Guia de ativação</a></p></div>
 <div class="card"><h3>Fotos capturadas</h3><div class="row"><button onclick="loadGallery()">↻ Atualizar galeria</button><span id="galCount" style="color:var(--mut);font-size:13px"></span></div><div class="gallery" id="gal" style="margin-top:10px"></div></div>
+<div class="card"><h3>🎬 Gravação própria (sem OBS)</h3><div class="row"><span class="rec-dot" id="recDot"></span><span id="recInfo" style="color:var(--mut);font-size:13px">parado</span><button onclick="loadVideos()">↻ Vídeos</button></div><div class="gallery" id="vids" style="margin-top:10px"></div><p style="color:var(--mut);font-size:12px">Grava MP4 em <b>captures/</b> direto do pipeline — nosso "OBS próprio" para registro. Para entrar ao vivo no Meet, use Modo Apresentar + Compartilhar tela.</p></div>
 </div>
 <div>
-<div class="card"><h3>Webcam virtual (Zoom / Meet / Teams)</h3><div class="row"><button class="primary" onclick="vcStart()">▶ Iniciar (OBS)</button><button onclick="vcStop()">⏹ Parar</button></div><p style="color:var(--mut);font-size:12px">Selecione <b>OBS Virtual Camera</b> no app de reunião. No Mac instale o OBS 30+ e abra 1x: Start Virtual Camera → Stop.</p></div>
+<div class="card"><h3>Webcam virtual (Zoom / Meet / Teams) — só localhost</h3><div class="row"><button class="primary" id="btnVc" onclick="vcStart()">▶ Iniciar (OBS)</button><button onclick="vcStop()">⏹ Parar</button><a href="/present" target="_blank"><button class="ghost">⛶ Apresentar p/ Compartilhar tela</button></a></div><div class="notice" id="vcNote" style="display:none"></div><p style="color:var(--mut);font-size:12px">No PC/Mac local: instale o OBS 30+, abra 1x Start Virtual Camera → Stop, depois Iniciar aqui e selecione <b>OBS Virtual Camera</b> na reunião. Na nuvem este botão é bloqueado de propósito.</p></div>
 <div class="card"><h3>Imagem / cena</h3><div class="grid">
 <div><label>Modo</label><br><select id="mode"><option value="fit">Fit</option><option value="fill">Fill</option></select></div>
 <div><label>Girar</label><br><select id="rot"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
@@ -65,12 +71,15 @@ a{color:#6ab0ff}
 <footer>R10 Webcam · FastAPI + OpenCV · <a href="/api/health">health</a> · <a href="/api/status">status</a></footer>
 </div>
 <script>
+let IS_CLOUD=false;
+function toast(m,ok){const t=document.getElementById('toast');t.textContent=m;t.className=ok?'show ok':'show';clearTimeout(t._h);t._h=setTimeout(()=>t.className='',6000);}
 async function j(u,o,method){const r=await fetch(u,{method:method||'POST',headers:{'Content-Type':'application/json'},body:o?JSON.stringify(o):null});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;}
 function log(m){const e=document.getElementById('log');e.textContent=new Date().toLocaleTimeString()+' '+m+'\n'+e.textContent;}
 async function connect(){const ip=document.getElementById('ip').value.trim();if(!ip){log('digite o IP da R10');return;}log('Conectando '+ip+'...');try{const r=await j('/api/connect',{ip});log(JSON.stringify(r));}catch(e){log('ERRO: '+e.message);}upd();}
 async function disconnect(){await j('/api/disconnect');upd();}
-async function vcStart(){try{const r=await fetch('/api/virtualcam/start?backend=obs',{method:'POST'}).then(r=>r.json());log(JSON.stringify(r));}catch(e){log('ERRO vc: '+e.message);}upd();}
+async function vcStart(){try{const r=await fetch('/api/virtualcam/start?backend=obs',{method:'POST'}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;});log(JSON.stringify({ok:true,device:r.device}));toast('Webcam virtual ligada: '+r.device,true);}catch(e){log('ERRO vc: '+e.message);toast('Webcam virtual: '+e.message,false);}upd();}
 async function vcStop(){await fetch('/api/virtualcam/stop',{method:'POST'});upd();}
+async function toggleRec(){try{const s=await fetch('/api/rec/status').then(r=>r.json());if(s.recording){const r=await j('/api/rec/stop');log('gravacao parada: '+JSON.stringify(r));toast('Vídeo salvo: '+r.file,true);}else{const r=await j('/api/rec/start');log('gravando: '+JSON.stringify(r));toast('Gravando vídeo… clique de novo para parar',true);}loadVideos();}catch(e){toast('Gravação: '+e.message,false);}upd();}
 async function snap(){try{const r=await j('/api/snapshot');log(JSON.stringify(r));loadGallery();}catch(e){log('ERRO foto: '+e.message);}}
 async function shutter(){try{log(JSON.stringify(await j('/api/shutter')));}catch(e){log('ERRO disparar (precisa da camera real): '+e.message);}}
 async function setS(){const n=document.getElementById('sname').value,v=document.getElementById('sval').value;try{log(JSON.stringify(await j('/api/setting',{name:n,value:v})));}catch(e){log('ERRO: '+e.message);}}
@@ -78,8 +87,9 @@ async function pipe(){const o={mode:mode.value,flip_h:flip.checked,rotate:+rot.v
 async function toggleDemo(){const on=!document.getElementById('swDemo').classList.contains('on');try{await j('/api/demo',{enabled:on});log('demo '+(on?'ligado':'desligado'));}catch(e){log('ERRO demo: '+e.message);}upd();}
 function reloadPrev(){const p=document.getElementById('prev');p.src='/preview.mjpg?r='+Date.now();}
 async function loadGallery(){try{const d=await fetch('/api/captures').then(r=>r.json());const g=document.getElementById('gal');g.innerHTML=(d.files||[]).map(f=>`<a href="/captures/${f}" target="_blank"><img loading="lazy" src="/captures/${f}"></a>`).join('')||'<span style="color:var(--mut)">nenhuma foto ainda — clique em Capturar</span>';document.getElementById('galCount').textContent=(d.files||[]).length+' fotos';}catch(e){log('ERRO galeria: '+e.message);}}
-async function upd(){try{const s=await fetch('/api/status').then(r=>r.json());document.getElementById('ver').textContent='v'+(s.version||'?')+(s.demo?' · DEMO':'');const c=s.camera;document.getElementById('st').textContent=c.connected?(`conectado · ${(c.fps||0).toFixed(1)}fps · bat ${c.battery||'?'}`):(s.demo?'demo ativo — sem camera':('off '+(c.last_error||'')));document.getElementById('st').className='pill '+((c.connected||s.demo)?'ok':'err');document.getElementById('vc').textContent='virtualcam: '+(s.virtualcam.running?s.virtualcam.device:'parada')+(s.virtualcam.error?' · '+s.virtualcam.error:'');document.getElementById('dm').textContent='demo: '+(s.demo?'on':'off');document.getElementById('dm').className='pill '+(s.demo?'warn':'');document.getElementById('swDemo').classList.toggle('on',!!s.demo);}catch(e){}}
-setInterval(upd,3000);upd();loadGallery();
+async function loadVideos(){try{const d=await fetch('/api/videos').then(r=>r.json());const g=document.getElementById('vids');g.innerHTML=(d.files||[]).map(f=>`<a href="/captures/${f}" target="_blank" style="color:#6ab0ff;font-size:13px">▶ ${f}</a>`).join('<br>')||'<span style="color:var(--mut)">nenhum vídeo — clique em Gravar vídeo</span>';}catch(e){log('ERRO videos: '+e.message);}}
+async function upd(){try{const s=await fetch('/api/status').then(r=>r.json());IS_CLOUD=!!s.cloud;document.getElementById('cloudNote').style.display=IS_CLOUD?'block':'none';const vn=document.getElementById('vcNote');if(IS_CLOUD){vn.style.display='block';vn.textContent='☁️ Nuvem detectada: use Modo Apresentar + Compartilhar tela. Webcam virtual só no localhost com OBS.';document.getElementById('btnVc').disabled=true;}else{vn.style.display=s.virtualcam.error?'block':'none';vn.textContent=s.virtualcam.error||'';document.getElementById('btnVc').disabled=false;}document.getElementById('ver').textContent='v'+(s.version||'?')+(s.demo?' · DEMO':'')+(IS_CLOUD?' · CLOUD':' · LOCAL');const c=s.camera;document.getElementById('st').textContent=c.connected?(`conectado · ${(c.fps||0).toFixed(1)}fps · bat ${c.battery||'?'}`):(s.demo?'demo ativo — sem camera':('off '+(c.last_error||'')));document.getElementById('st').className='pill '+((c.connected||s.demo)?'ok':'err');const verr=s.virtualcam.error?(' · '+(s.virtualcam.error.length>80?s.virtualcam.error.slice(0,80)+'…':s.virtualcam.error)):'';document.getElementById('vc').textContent='virtualcam: '+(s.virtualcam.running?s.virtualcam.device:'parada')+verr;const rec=s.rec||{};document.getElementById('rec').textContent=rec.recording?('● REC '+rec.file):'rec parado';document.getElementById('rec').className='pill '+(rec.recording?'err':'');document.getElementById('recDot').classList.toggle('on',!!rec.recording);document.getElementById('recInfo').textContent=rec.recording?('gravando '+rec.file):(rec.file?('último: '+rec.file):'parado');document.getElementById('btnRec').textContent=rec.recording?'⏹ Parar e salvar':'⏺ Gravar vídeo';document.getElementById('dm').textContent='demo: '+(s.demo?'on':'off');document.getElementById('dm').className='pill '+(s.demo?'warn':'');document.getElementById('swDemo').classList.toggle('on',!!s.demo);}catch(e){}}
+setInterval(upd,3000);upd();loadGallery();loadVideos();
 </script>
 </body>
 </html>

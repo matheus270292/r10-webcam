@@ -1,7 +1,16 @@
 # R10 Webcam — Wi-Fi CCAPI (sem USB) · macOS Apple Silicon
 
 MVP 100% wireless para Canon EOS R10 inspirado no EOS Webcam Utility PRO.
-Versão atual: `1.1.0` (ver arquivo `VERSION` + `/api/health`).
+Versão atual: `1.2.0` (ver arquivo `VERSION` + `/api/health`).
+
+## Programa 100% funcional em localhost (sem OBS obrigatório)
+
+Nosso "OBS próprio": preview + foto JPG + **gravação MP4** + **Modo Apresentar** (`/present`).
+
+- `http://127.0.0.1:8000` — painel completo
+- `http://127.0.0.1:8000/present` — tela limpa p/ **Compartilhar tela/aba no Meet/Zoom** (substitui webcam virtual, sem driver)
+- `⏺ Gravar vídeo` — salva MP4 em `captures/` e lista na galeria de vídeos
+- Webcam virtual OBS continua existindo, mas **só no localhost com OBS instalado**; na nuvem o botão é bloqueado com aviso.
 
 ## LINK público funcional (front + back, sem câmera — modo demo)
 
