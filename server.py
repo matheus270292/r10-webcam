@@ -1,4 +1,4 @@
-"""FastAPI server: Web UI + MJPEG preview + CCAPI controls + virtualcam."""
+"""FastAPI server: Web UI + MJPEG preview + CCAPI controls + virtualcam + demo mode."""
 from __future__ import annotations
 
 import os
@@ -6,7 +6,8 @@ import time
 from datetime import datetime
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -18,18 +19,28 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 CAP_DIR = os.path.join(BASE, "captures")
 os.makedirs(CAP_DIR, exist_ok=True)
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 try:
     with open(os.path.join(BASE, "VERSION"), encoding="utf-8") as _f:
         VERSION = _f.read().strip() or VERSION
 except Exception:
     pass
 
-pipe = Pipeline()
+DEMO_DEFAULT = os.getenv("DEMO", "1") == "1"  # link publico funciona sem camera
+PORT = int(os.getenv("PORT", "8000"))
+
+pipe = Pipeline(demo=DEMO_DEFAULT)
 cam = CanonWiFi(on_frame=pipe.push_jpg)
 
 app = FastAPI(title="R10 Webcam (Wi-Fi CCAPI)")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE, "static")), name="static")
+app.mount("/captures", StaticFiles(directory=CAP_DIR), name="captures")
 
 
 class ConnectReq(BaseModel):
@@ -60,6 +71,7 @@ def index():
 def status():
     return {
         "version": VERSION,
+        "demo": pipe.demo,
         "camera": cam.status.__dict__,
         "virtualcam": virtualcam.status(),
         "pipe": {"mode": pipe.mode, "flip_h": pipe.flip_h, "rotate": pipe.rotate,
@@ -70,7 +82,39 @@ def status():
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "version": VERSION}
+    return {"ok": True, "version": VERSION, "demo": pipe.demo}
+
+
+class DemoReq(BaseModel):
+    enabled: bool
+
+
+@app.post("/api/demo")
+def demo(req: DemoReq):
+    pipe.demo = bool(req.enabled)
+    if req.enabled:
+        pipe.latest_jpg = None
+    return {"ok": True, "demo": pipe.demo}
+
+
+@app.get("/api/captures")
+def captures():
+    try:
+        files = sorted(
+            (f for f in os.listdir(CAP_DIR) if f.lower().endswith((".jpg", ".jpeg"))),
+            reverse=True,
+        )[:50]
+    except Exception:
+        files = []
+    return {"ok": True, "files": files}
+
+
+@app.get("/api/photo/{name}")
+def photo(name: str):
+    path = os.path.join(CAP_DIR, os.path.basename(name))
+    if not os.path.isfile(path):
+        return JSONResponse({"ok": False, "error": "nao encontrada"}, status_code=404)
+    return FileResponse(path, media_type="image/jpeg")
 
 
 @app.post("/api/connect")

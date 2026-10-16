@@ -1,7 +1,19 @@
 # R10 Webcam — Wi-Fi CCAPI (sem USB) · macOS Apple Silicon
 
 MVP 100% wireless para Canon EOS R10 inspirado no EOS Webcam Utility PRO.
-Versão atual: `1.0.0` (ver arquivo `VERSION` + `/api/health`).
+Versão atual: `1.1.0` (ver arquivo `VERSION` + `/api/health`).
+
+## LINK público funcional (front + back, sem câmera — modo demo)
+
+O back é Python (FastAPI+OpenCV) e não roda no Cloudflare Pages. Para ter um link visitável:
+
+**Render (recomendado, grátis):**
+1. Acesse `dashboard.render.com` → New → Web Service → conecte este repo
+2. Runtime: **Docker** (usa o `Dockerfile` + `render.yaml` já inclusos)
+3. Env: `DEMO=1` (vem por padrão — gera imagem sintética sem câmera)
+4. Deploy → link `https://r10-webcam.onrender.com` (front completo + `/api/status`, `/preview.mjpg`, galeria)
+
+**Local:** `pip install -r requirements.txt && uvicorn server:app --port 8000` → `http://127.0.0.1:8000` (com `DEMO=1` funciona sem câmera; com câmera real use `DEMO=0` + IP da R10).
 
 ## Para QUEM VAI USAR (caminho fácil — compartilhar este link)
 

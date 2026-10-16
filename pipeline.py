@@ -11,11 +11,13 @@ W, H, FPS = 1280, 720, 30
 
 
 class Pipeline:
-    def __init__(self):
+    def __init__(self, demo: bool = False):
         self.lock = threading.Lock()
         self.latest_jpg: bytes | None = None
         self.latest_frame: np.ndarray | None = None
         self.last_jpg_ts = 0.0
+        self.demo = demo
+        self._demo_t0 = time.time()
         # settings (from Web UI)
         self.mode = "fit"          # fit | fill
         self.flip_h = False
@@ -37,6 +39,7 @@ class Pipeline:
             jpg = None
             with self.lock:
                 jpg = self.latest_jpg
+                demo = self.demo
             if jpg:
                 arr = np.frombuffer(jpg, dtype=np.uint8)
                 img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
@@ -44,6 +47,11 @@ class Pipeline:
                     img = self._process(img)
                     with self.lock:
                         self.latest_frame = img
+            elif demo:
+                img = self._demo_frame()
+                img = self._process(img)
+                with self.lock:
+                    self.latest_frame = img
             else:
                 # placeholder slate when no signal
                 img = np.zeros((H, W, 3), np.uint8)
@@ -52,6 +60,27 @@ class Pipeline:
                 with self.lock:
                     self.latest_frame = img
             time.sleep(1 / FPS)
+
+    def _demo_frame(self) -> np.ndarray:
+        """Synthetic 1280x720 test frame so the web UI works without a camera."""
+        import math
+        t = time.time() - self._demo_t0
+        img = np.zeros((H, W, 3), np.uint8)
+        # gradient background animated
+        for y in range(0, H, 4):
+            v = int(20 + 30 * (0.5 + 0.5 * math.sin(t * 1.5 + y / 120)))
+            img[y:y + 4, :] = (v + 40, v + 20, 90 - v // 3)
+        # moving circle (fake subject)
+        cx = int(W / 2 + (W / 3) * math.sin(t * 0.7))
+        cy = int(H / 2 + (H / 4) * math.cos(t * 0.9))
+        cv2.circle(img, (cx, cy), 90, (0, 200, 255), -1)
+        cv2.circle(img, (cx, cy), 90, (255, 255, 255), 3)
+        cv2.putText(img, "MODO DEMO — sem camera conectada", (60, 80),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(img, time.strftime("%H:%M:%S"), (60, 130),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 0), 2, cv2.LINE_AA)
+        cv2.rectangle(img, (0, 0), (W - 1, H - 1), (255, 255, 255), 2)
+        return img
 
     def _process(self, img: np.ndarray) -> np.ndarray:
         h, w = img.shape[:2]

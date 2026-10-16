@@ -5,65 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>R10 Webcam — Wi-Fi CCAPI</title>
 <style>
-:root{color-scheme:dark}body{background:#111;color:#eee;font-family:system-ui;margin:0;padding:16px}
-.wrap{max-width:980px;margin:auto}.card{background:#1b1b1b;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:12px}
-img.prev{width:100%;border-radius:8px;background:#000}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-input,select,button{background:#222;color:#eee;border:1px solid #444;border-radius:8px;padding:8px 10px}
-button{cursor:pointer}button.primary{background:#0a6cff;border-color:#0a6cff}.pill{font-size:12px;padding:3px 10px;border-radius:20px;background:#333}
-.ok{background:#14532d}.err{background:#7f1d1d}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-label{font-size:12px;color:#aaa}
+:root{color-scheme:dark;--bg:#0c0d10;--card:#15171c;--line:#262a33;--txt:#eef1f6;--mut:#9aa3b2;--acc:#0a6cff;--ok:#16a34a;--err:#dc2626;--warn:#f59e0b}
+*{box-sizing:border-box}body{background:radial-gradient(1200px 600px at 20% -10%,#1a2340 0%,var(--bg) 55%) fixed,var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:20px 16px 60px}
+.wrap{max-width:1080px;margin:auto}
+header.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.brand h1{margin:0;font-size:22px;letter-spacing:.3px}.brand small{color:var(--mut)}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-size:12px;padding:5px 12px;border-radius:20px;background:#222;border:1px solid var(--line)}
+.pill.ok{background:#0f3d22;border-color:#14532d}.pill.err{background:#431313;border-color:#7f1d1d}.pill.warn{background:#3d2c0a;border-color:#7c5a10}
+.grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:12px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,#181b21,#13151a);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.card h3{margin:0 0 10px;font-size:15px;color:#cfd6e2;text-transform:uppercase;letter-spacing:.8px}
+img.prev{width:100%;border-radius:10px;background:#000;border:1px solid #000;display:block;aspect-ratio:16/9;object-fit:cover}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select,button{background:#20242d;color:var(--txt);border:1px solid #343a47;border-radius:10px;padding:10px 12px;font-size:14px}
+input:focus,select:focus{outline:2px solid var(--acc);border-color:var(--acc)}
+button{cursor:pointer;font-weight:600}button:hover{filter:brightness(1.12)}
+button.primary{background:var(--acc);border-color:var(--acc)}
+button.ghost{background:transparent}
+button.danger{background:#3a1414;border-color:#7f1d1d}
+label{font-size:12px;color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+#log{background:#000;border:1px solid var(--line);padding:10px;border-radius:10px;max-height:180px;overflow:auto;font:12px/1.5 monospace;white-space:pre-wrap}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.gallery a img{width:100%;border-radius:8px;border:1px solid var(--line);aspect-ratio:16/9;object-fit:cover}
+footer{color:var(--mut);font-size:12px;text-align:center;margin-top:18px}
+a{color:#6ab0ff}
+.toggle{display:flex;align-items:center;gap:8px}
+.switch{position:relative;width:44px;height:24px;background:#333;border-radius:20px;border:1px solid var(--line);cursor:pointer}
+.switch.on{background:var(--ok)}.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.15s}.switch.on::after{left:22px}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h2>R10 Webcam <span style="color:#888;font-size:14px">Wi-Fi CCAPI · sem USB</span></h2>
-<div class="card">
-<div class="row">
-<input id="ip" placeholder="IP da R10 (ex 192.168.1.20)" style="flex:1;min-width:200px">
-<button class="primary" onclick="connect()">Conectar</button>
-<button onclick="disconnect()">Desconectar</button>
-<span id="st" class="pill">desconectado</span>
+<header class="top">
+<div class="brand"><h1>📷 R10 Webcam <small>Wi-Fi CCAPI · sem USB</small></h1><small id="ver">v…</small></div>
+<div class="pills"><span id="st" class="pill">…</span><span id="vc" class="pill">virtualcam</span><span id="dm" class="pill">demo</span></div>
+</header>
+
+<div class="grid2">
+<div>
+<div class="card"><h3>Preview ao vivo</h3><img class="prev" id="prev" src="/preview.mjpg" alt="preview"><div class="row" style="margin-top:10px"><button class="primary" onclick="snap()">📸 Capturar foto</button><button onclick="reloadPrev()">↻ Recarregar preview</button><span class="toggle"><span class="switch" id="swDemo" onclick="toggleDemo()"></span><label>Modo demo (sem câmera)</label></span></div></div>
+<div class="card"><h3>Conectar na Canon R10</h3><div class="row"><input id="ip" placeholder="IP da R10 (ex 192.168.1.20)" style="flex:1;min-width:200px"><button class="primary" onclick="connect()">Conectar</button><button class="ghost" onclick="disconnect()">Desconectar</button></div><p style="color:var(--mut);font-size:13px">Na R10: Menu → Funções wireless → CCAPI → mesma rede Wi-Fi. <a href="/static/ativacao-ccapi.html">Guia de ativação</a></p></div>
+<div class="card"><h3>Fotos capturadas</h3><div class="row"><button onclick="loadGallery()">↻ Atualizar galeria</button><span id="galCount" style="color:var(--mut);font-size:13px"></span></div><div class="gallery" id="gal" style="margin-top:10px"></div></div>
 </div>
-<p style="color:#888;font-size:13px">Na R10: Menu → Funções wireless → CCAPI → mesma rede Wi-Fi do Mac. <a href="/static/ativacao-ccapi.html" style="color:#6ab0ff">Guia de ativação</a></p>
-</div>
-<div class="card"><img class="prev" src="/preview.mjpg" alt="preview"></div>
-<div class="card"><div class="row">
-<button onclick="vc('obs')">▶ Iniciar webcam virtual (OBS)</button>
-<button onclick="fetch('/api/virtualcam/stop',{method:'POST'})">⏹ Parar</button>
-<button onclick="snap()">📸 Foto (salva em captures/)</button>
-<button onclick="shutter()">📷 Disparar na câmera</button>
-<span id="vc" class="pill">virtualcam: parada</span>
-</div></div>
-<div class="card"><h4>Imagem / cena (estilo EWU PRO)</h4>
-<div class="grid">
+<div>
+<div class="card"><h3>Webcam virtual (Zoom / Meet / Teams)</h3><div class="row"><button class="primary" onclick="vcStart()">▶ Iniciar (OBS)</button><button onclick="vcStop()">⏹ Parar</button></div><p style="color:var(--mut);font-size:12px">Selecione <b>OBS Virtual Camera</b> no app de reunião. No Mac instale o OBS 30+ e abra 1x: Start Virtual Camera → Stop.</p></div>
+<div class="card"><h3>Imagem / cena</h3><div class="grid">
 <div><label>Modo</label><br><select id="mode"><option value="fit">Fit</option><option value="fill">Fill</option></select></div>
 <div><label>Girar</label><br><select id="rot"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
 <div><label><input type="checkbox" id="flip"> Espelhar</label></div>
 <div><label>Brilho (-100..100)</label><br><input id="bri" type="number" value="0"></div>
 <div><label>Contraste (0.5..2)</label><br><input id="con" type="number" step="0.1" value="1.0"></div>
 <div><label>Texto overlay</label><br><input id="txt" placeholder="Seu nome / live"></div>
-</div><br><button onclick="pipe()">Aplicar</button>
+</div><br><button class="primary" onclick="pipe()">Aplicar</button></div>
+<div class="card"><h3>Controle da câmera (CCAPI)</h3><div class="row"><input id="sname" placeholder="av | tv | iso | wb" style="width:130px"><input id="sval" placeholder="ex: f2.8 | 1/125 | 800"><button onclick="setS()">Enviar</button><button class="danger" onclick="shutter()">📷 Disparar</button></div><pre id="log"></pre></div>
 </div>
-<div class="card"><h4>Controle da câmera (CCAPI)</h4>
-<div class="row">
-<input id="sname" placeholder="av | tv | iso | wb" style="width:130px"><input id="sval" placeholder="ex: f2.8 | 1/125 | 800">
-<button onclick="setS()">Enviar</button>
-</div><p style="color:#888;font-size:12px">Valores dependem do modo da câmera (exponha em M/Av/Tv). Erros aparecem no status.</p>
-<pre id="log" style="background:#000;padding:10px;border-radius:8px;max-height:160px;overflow:auto"></pre>
 </div>
+<footer>R10 Webcam · FastAPI + OpenCV · <a href="/api/health">health</a> · <a href="/api/status">status</a></footer>
 </div>
 <script>
-async function j(u,o){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:o?JSON.stringify(o):null});return r.json().catch(()=>({}));}
-async function connect(){const ip=document.getElementById('ip').value;log('Conectando '+ip+'...');const r=await j('/api/connect',{ip});log(JSON.stringify(r));upd();}
-async function disconnect(){await j('/api/disconnect');upd();}
-async function vc(b){const r=await fetch('/api/virtualcam/start?backend='+b,{method:'POST'}).then(r=>r.json());log(JSON.stringify(r));upd();}
-async function snap(){log(JSON.stringify(await j('/api/snapshot')));}
-async function shutter(){log(JSON.stringify(await j('/api/shutter')));}
-async function setS(){const n=document.getElementById('sname').value,v=document.getElementById('sval').value;log(JSON.stringify(await j('/api/setting',{name:n,value:v})));}
-async function pipe(){const o={mode:mode.value,flip_h:flip.checked,rotate:+rot.value,brightness:+bri.value,contrast:+con.value,text_overlay:txt.value};log(JSON.stringify(await j('/api/pipe',o)));}
+async function j(u,o,method){const r=await fetch(u,{method:method||'POST',headers:{'Content-Type':'application/json'},body:o?JSON.stringify(o):null});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;}
 function log(m){const e=document.getElementById('log');e.textContent=new Date().toLocaleTimeString()+' '+m+'\n'+e.textContent;}
-async function upd(){const s=await fetch('/api/status').then(r=>r.json());document.getElementById('st').textContent=s.camera.connected?('conectado · '+s.camera.fps.toFixed(1)+'fps · bat '+s.camera.battery):('off '+(s.camera.last_error||''));document.getElementById('st').className='pill '+(s.camera.connected?'ok':'err');document.getElementById('vc').textContent='virtualcam: '+(s.virtualcam.running?s.virtualcam.device:'parada')+(s.virtualcam.error?' · '+s.virtualcam.error:'');}
-setInterval(upd,3000);upd();
+async function connect(){const ip=document.getElementById('ip').value.trim();if(!ip){log('digite o IP da R10');return;}log('Conectando '+ip+'...');try{const r=await j('/api/connect',{ip});log(JSON.stringify(r));}catch(e){log('ERRO: '+e.message);}upd();}
+async function disconnect(){await j('/api/disconnect');upd();}
+async function vcStart(){try{const r=await fetch('/api/virtualcam/start?backend=obs',{method:'POST'}).then(r=>r.json());log(JSON.stringify(r));}catch(e){log('ERRO vc: '+e.message);}upd();}
+async function vcStop(){await fetch('/api/virtualcam/stop',{method:'POST'});upd();}
+async function snap(){try{const r=await j('/api/snapshot');log(JSON.stringify(r));loadGallery();}catch(e){log('ERRO foto: '+e.message);}}
+async function shutter(){try{log(JSON.stringify(await j('/api/shutter')));}catch(e){log('ERRO disparar (precisa da camera real): '+e.message);}}
+async function setS(){const n=document.getElementById('sname').value,v=document.getElementById('sval').value;try{log(JSON.stringify(await j('/api/setting',{name:n,value:v})));}catch(e){log('ERRO: '+e.message);}}
+async function pipe(){const o={mode:mode.value,flip_h:flip.checked,rotate:+rot.value,brightness:+bri.value,contrast:+con.value,text_overlay:txt.value};try{log(JSON.stringify(await j('/api/pipe',o)));}catch(e){log('ERRO: '+e.message);}}
+async function toggleDemo(){const on=!document.getElementById('swDemo').classList.contains('on');try{await j('/api/demo',{enabled:on});log('demo '+(on?'ligado':'desligado'));}catch(e){log('ERRO demo: '+e.message);}upd();}
+function reloadPrev(){const p=document.getElementById('prev');p.src='/preview.mjpg?r='+Date.now();}
+async function loadGallery(){try{const d=await fetch('/api/captures').then(r=>r.json());const g=document.getElementById('gal');g.innerHTML=(d.files||[]).map(f=>`<a href="/captures/${f}" target="_blank"><img loading="lazy" src="/captures/${f}"></a>`).join('')||'<span style="color:var(--mut)">nenhuma foto ainda — clique em Capturar</span>';document.getElementById('galCount').textContent=(d.files||[]).length+' fotos';}catch(e){log('ERRO galeria: '+e.message);}}
+async function upd(){try{const s=await fetch('/api/status').then(r=>r.json());document.getElementById('ver').textContent='v'+(s.version||'?')+(s.demo?' · DEMO':'');const c=s.camera;document.getElementById('st').textContent=c.connected?(`conectado · ${(c.fps||0).toFixed(1)}fps · bat ${c.battery||'?'}`):(s.demo?'demo ativo — sem camera':('off '+(c.last_error||'')));document.getElementById('st').className='pill '+((c.connected||s.demo)?'ok':'err');document.getElementById('vc').textContent='virtualcam: '+(s.virtualcam.running?s.virtualcam.device:'parada')+(s.virtualcam.error?' · '+s.virtualcam.error:'');document.getElementById('dm').textContent='demo: '+(s.demo?'on':'off');document.getElementById('dm').className='pill '+(s.demo?'warn':'');document.getElementById('swDemo').classList.toggle('on',!!s.demo);}catch(e){}}
+setInterval(upd,3000);upd();loadGallery();
 </script>
 </body>
 </html>

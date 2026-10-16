@@ -1,0 +1,11 @@
+.venv/
+.build-venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.dmg
+dmg-stage/
+captures/*.jpg
+.DS_Store
+.git/
